@@ -1,83 +1,71 @@
 """
-Author: Corwin Broekhuizen
+Author: Corwin Broekhuizen & Philip Stenger
 Date created: 25/07/2023
-Last edit: 25/07/2023, Corwin Broekhuizen
-Description: A module to define the catch class and all related functions to this class.
+Description: A module to define the Catch class and all related functions.
 
-Note on code style. 
-All upper case: GLOBAL_CONSTANT, 
-Tile case: Class, 
-Underscore seperation: local_varible, 
-Camel case: functionOrFunctionDef
+Note on naming conventions:
+    - GLOBAL_CONSTANTS: All uppercase, separated by underscores.
+    - Classes: TitleCase (also known as CamelCase).
+    - local_variables: snake_case, all lowercase, separated by underscores.
+    - functions: snake_case, all lowercase, separated by underscores.
 """
 
-# Imports
-
-
-
-# Global constants
-
-"""Define Catch class"""
-class Catch(object):
-    """Catch class defines a class to handle the details of a catch, including the species, the catch time
-    total weight and every animal in the catch
+class Catch:
+    """
+    The Catch class defines a container for details about a catch, including the species, catch time, 
+    total weight and count of the creatures.
 
     Attributes:
-        .id
-        .creatures
-        .time
-        .location
-        .weight
-        .num_creatures
+        - id (str): Identifier for the Catch object.
+        - creatures (list): List of creatures in the catch.
+        - time (str): The time when the catch was made.
+        - location (str): The location where the catch was made.
+        - weight (float): The total weight of the catch.
+        - num_creatures (int): The count of creatures in the catch.
 
-     If addding/removing an attribute make sure to update __init__ AND __repr__
+    Note: If adding/removing an attribute, ensure to update both __init__ and __repr__ methods accordingly.
     """
 
-    def __init__(self, *, id=None, creatures=None, time=None, location=None, weight=None, num_creatures=None):
-        """Creates a new Catch object an assigns it to the current catch."""
+    def __init__(self, id=None, creatures=None, time=None, location=None, weight=None, num_creatures=None):
+        """Initialize a new Catch instance."""
         self.id = id
-        self.creatures = [creatures]
+        self.creatures = [creatures] if creatures is not None else []
         self.time = time
         self.location = location
         self.weight = weight
         self.num_creatures = num_creatures
 
-
     def __str__(self):
-        """returns a string of a Catch object in the following form:"""
+        """Return a string representation of a Catch instance."""
         return f'Object: Catch, ID: {self.id}'
-    
-    def __repr__(self):
-        """Returns a string of a Catch object in the following form:"""
-        return f'Cray(id={self.id}, creatures={self.self.creatures}, time={self.time}, location={self.location}, weight={self.weight}, \
-            num_creatures={self.num_creatures})'
-    
-    def setId(self, *, time, location):
-        """Generates an id for the Catch in the format 'C{location}{datetime}' no spaces in the id"""
-        #self.id = f'C{location}{time}'
 
-    def addCreature(self, new_creature):
-        """Appends a new creature to the list of the creatures in the catch."""
+    def __repr__(self):
+        """Return a comprehensive string representation of a Catch instance."""
+        return f'Catch(id={self.id}, creatures={self.creatures}, time={self.time}, location={self.location}, weight={self.weight}, num_creatures={self.num_creatures})'
+
+    def set_id(self, time, location):
+        """Generate an identifier for the Catch instance in the format 'C{location}{datetime}', ensuring no spaces."""
+        self.id = f'C{location}{time}'
+
+    def add_creature(self, new_creature):
+        """Add a new creature to the catch."""
         self.creatures.append(new_creature)
 
-    def setTime(self, date_time):
-        """Sets the time caught to the current time from GPS"""
-        self.time_caught = date_time
+    def set_time(self, date_time):
+        """Set the time the catch was made."""
+        self.time = date_time
 
-    def setLocationCaught(self, location):
-        """Sets the location caught to the current GPS location"""
-        self.time_caught = location
+    def set_location(self, location):
+        """Set the location where the catch was made."""
+        self.location = location
 
-    def calcWeight(self):
-        """Calculates the total weight of the catch"""
-        total_weight = 0
-        for creature in self.creatures:
-            total_weight += creature.weight
+    def calculate_weight(self):
+        """Calculate the total weight of the catch."""
+        self.weight = sum(creature.weight for creature in self.creatures)
 
-        self.weight = total_weight
-
-    def calcNumCreatures(self):
-        """Counts the number of creatures in the catch"""
+    def count_creatures(self):
+        """Count the number of creatures in the catch."""
         self.num_creatures = len(self.creatures)
+
 
 
