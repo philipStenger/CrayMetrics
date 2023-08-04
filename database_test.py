@@ -1,3 +1,5 @@
+# checks if database is running smoothly
+
 import unittest
 import sqlite3
 from crayfish_catch_management import Catch, Batch, create_database, insert_batch, remove_batch

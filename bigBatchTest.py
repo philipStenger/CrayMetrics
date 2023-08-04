@@ -1,3 +1,5 @@
+# Check if the program can handle a large number of entries
+
 import random
 from crayfish_catch_management import Batch, Catch, create_database, insert_batch, retrieve_and_display_data, clear_database
 
