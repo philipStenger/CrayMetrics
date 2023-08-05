@@ -197,7 +197,7 @@ def main():
     # remove_batch('B1')
 
     # Retrieve and display data
-    retrieve_and_display_data('B1')
+    # retrieve_and_display_data('B1')
 
 if __name__ == '__main__':
     main()
