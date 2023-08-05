@@ -13,12 +13,12 @@ def generate_and_insert_data():
     cursor = connection.cursor()
 
     # Iterate through 20 batches
-    for batch_number in range(1, 21):
+    for batch_number in range(1, 101):
         batch_id = f'B{batch_number}'
-        num_catches = random.randint(10, 20)
+        num_catches = random.randint(20, 50)
         base_time = datetime(2023, 1, 1, random.randint(0, 23), 0)
-        base_latitude = random.uniform(-90, 90)
-        base_longitude = random.uniform(-180, 180)
+        base_latitude = random.uniform(-53, -25)
+        base_longitude = random.uniform(160, 190)
         
         # Create and insert batch
         batch = Batch(BatchID=batch_id)
@@ -28,8 +28,8 @@ def generate_and_insert_data():
         for catch_number in range(1, num_catches + 1):
             time_variance = timedelta(minutes=random.randint(-30, 30))
             time = (base_time + time_variance).strftime('%H:%M')
-            latitude = round(base_latitude + random.uniform(-5, 5), 1)
-            longitude = round(base_longitude + random.uniform(-5, 5), 1)
+            latitude = round(base_latitude + random.uniform(-0.25, 0.25), 1)
+            longitude = round(base_longitude + random.uniform(-0.25, 0.25), 1)
             weight = round(random.uniform(2, 5), 1)
 
             catch_id = f'{time}/B{batch_number}/C{catch_number}'
@@ -100,9 +100,9 @@ def main():
     retrieve_and_display_data('B1')
 
     # Scatter Plot
-    scatter_data = get_scatter_data()
-    scatter_fig = px.scatter(scatter_data, x='Latitude', y='Longitude', title='Catch Locations')
-    scatter_fig.show()
+    # scatter_data = get_scatter_data()
+    # scatter_fig = px.scatter(scatter_data, x='Latitude', y='Longitude', title='Catch Locations')
+    # scatter_fig.show()
 
     # Bar Plot
     # bar_data = get_bar_data()
