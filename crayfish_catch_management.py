@@ -18,7 +18,7 @@ def create_database():
         CREATE TABLE IF NOT EXISTS catches (
             catch_id TEXT PRIMARY KEY,
             batch_id TEXT,
-            time TEXT,
+            time TIMESTAMP,
             latitude REAL,
             longitude REAL,
             weight REAL,
@@ -46,7 +46,7 @@ def insert_batch(batch):
 
 def insert_catch(cursor, batch_id, catch):
     cursor.execute('INSERT INTO catches (catch_id, batch_id, time, latitude, longitude, weight) VALUES (?, ?, ?, ?, ?, ?)',
-                   (catch.catchID, batch_id, catch.time, catch.coordinates[0], catch.coordinates[1], catch.weight))
+                   (catch.catchID, batch_id, catch.time.strftime('%Y-%m-%d %H:%M:%S'), catch.coordinates[0], catch.coordinates[1], catch.weight))
 
 def remove_batch(batch_id):
     # Connect to the database
@@ -165,26 +165,26 @@ def main():
 
     create_database()
 
-    # Create Catch objects
-    catch1 = Catch(catchID='C1', time='12:30', coordinates=(42.3601, -71.0589), weight=5.2)
-    catch2 = Catch(catchID='C2', time='13:15', coordinates=(40.7128, -74.0060), weight=6.3)
-    catch3 = Catch(catchID='C3', time='09:45', coordinates=(34.0522, -118.2437), weight=4.7)
-    catch4 = Catch(catchID='C4', time='10:00', coordinates=(37.7749, -122.4194), weight=7.0)
-    catch5 = Catch(catchID='C5', time='14:30', coordinates=(51.5074, -0.1278), weight=3.9)
+    # # Create Catch objects
+    # catch1 = Catch(catchID='C1', time='12:30', coordinates=(42.3601, -71.0589), weight=5.2)
+    # catch2 = Catch(catchID='C2', time='13:15', coordinates=(40.7128, -74.0060), weight=6.3)
+    # catch3 = Catch(catchID='C3', time='09:45', coordinates=(34.0522, -118.2437), weight=4.7)
+    # catch4 = Catch(catchID='C4', time='10:00', coordinates=(37.7749, -122.4194), weight=7.0)
+    # catch5 = Catch(catchID='C5', time='14:30', coordinates=(51.5074, -0.1278), weight=3.9)
     
-    # Create Batch 1 and add catches
-    batch1 = Batch(BatchID='B1')
-    batch1.add_catch(catch1)
-    batch1.add_catch(catch2)
+    # # Create Batch 1 and add catches
+    # batch1 = Batch(BatchID='B1')
+    # batch1.add_catch(catch1)
+    # batch1.add_catch(catch2)
 
-    # Create Batch 2 and add catches
-    batch2 = Batch(BatchID='B2')
-    batch2.add_catch(catch3)
-    batch2.add_catch(catch4)
+    # # Create Batch 2 and add catches
+    # batch2 = Batch(BatchID='B2')
+    # batch2.add_catch(catch3)
+    # batch2.add_catch(catch4)
 
-    # Create Batch 3 and add catches
-    batch3 = Batch(BatchID='B3')
-    batch3.add_catch(catch5)
+    # # Create Batch 3 and add catches
+    # batch3 = Batch(BatchID='B3')
+    # batch3.add_catch(catch5)
 
     # Insert batches into database
     # insert_batch(batch1)

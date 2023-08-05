@@ -11,42 +11,37 @@ import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 
-def get_heatmap_data(option, lat_min, lat_max, lon_min, lon_max):
+def get_heatmap_data(option, lat_min, lat_max, lon_min, lon_max, interval='day'):
     # Connect to the database
     connection = sqlite3.connect('crayfish_catch.db')
 
-    if lat_min is None:
-        lat_min = -43  # default value, or raise an exception if this is an error
-    
-    if lat_max is None:
-        lat_max = -15  # default value, or raise an exception if this is an error
+    # Create a filter for latitude and longitude
+    lat_lon_filter = f'WHERE c.latitude BETWEEN {lat_min} AND {lat_max} AND c.longitude BETWEEN {lon_min} AND {lon_max}'
 
-    if lon_min is None:
-        lon_min = 150  # default value, or raise an exception if this is an error
-
-    if lon_max is None:
-        lon_max = 200  # default value, or raise an exception if this is an error
-
-    # Add WHERE clause to filter data based on latitude and longitude ranges
-    lat_lon_filter = f'''
-        WHERE c.latitude BETWEEN {lat_min} AND {lat_max}
-        AND c.longitude BETWEEN {lon_min} AND {lon_max}
-    '''
+    # Add code to set time_grouping based on interval, like in get_time_series_data
+    if interval == 'hour':
+        time_grouping = "strftime('%Y-%m-%d %H:00:00', time)"
+    elif interval == 'month':
+        time_grouping = "strftime('%Y-%m', time)"
+    else: # default to day
+        time_grouping = "strftime('%Y-%m-%d', time)"
 
     if option == 'Weight':
         query = f'''
-            SELECT c.latitude, c.longitude, c.weight
+            SELECT {time_grouping} as time_interval, c.latitude, c.longitude, SUM(c.weight) as value
             FROM catches AS c
             JOIN batches AS b ON c.batch_id = b.batch_id
             {lat_lon_filter}
+            GROUP BY time_interval, c.latitude, c.longitude
         '''
     else:  # Number of Catches
         query = f'''
-            SELECT c.latitude, c.longitude, COUNT(c.catch_id) as catch_count
+            SELECT {time_grouping} as time_interval, c.latitude, c.longitude, COUNT(c.catch_id) as value
             FROM catches AS c
             {lat_lon_filter}
-            GROUP BY c.batch_id, c.latitude, c.longitude
+            GROUP BY time_interval, c.latitude, c.longitude
         '''
+
 
     # Execute query and read the result into a DataFrame
     df = pd.read_sql_query(query, connection)
@@ -62,8 +57,8 @@ def get_time_series_data(lat_min, lat_max, lon_min, lon_max, interval='day'):
     # Depending on the interval, adjust the SQL query to group by that interval
     if interval == 'hour':
         time_grouping = "strftime('%Y-%m-%d %H:00:00', time)"
-    elif interval == 'week':
-        time_grouping = "strftime('%Y-%W', time)"
+    elif interval == 'month':
+        time_grouping = "strftime('%Y-%m', time)"
     else: # default to day
         time_grouping = "strftime('%Y-%m-%d', time)"
 
@@ -83,24 +78,24 @@ def get_time_series_data(lat_min, lat_max, lon_min, lon_max, interval='day'):
     '''
 
     df = pd.read_sql_query(query, connection)
+    print(df)
     connection.close()
 
     return df
 
-def create_heatmap(option, lat_min, lat_max, lon_min, lon_max):
-    
-    df = get_heatmap_data(option, lat_min, lat_max, lon_min, lon_max)
+
+def create_heatmap(option, lat_min, lat_max, lon_min, lon_max, interval='day'):
+    df = get_heatmap_data(option, lat_min, lat_max, lon_min, lon_max, interval)
+
     if option == 'Weight':
-        z_value = 'weight'
-        max_catch_count = 50
+        max_catch_count = 100
     else:
-        z_value = 'catch_count'
-        max_catch_count = 6
+        max_catch_count = 50
 
     fig = px.density_mapbox(df, 
                             lat='latitude', 
                             lon='longitude', 
-                            z=z_value, 
+                            z='value', 
                             radius=10,
                             center=dict(lat= -40, lon= 175), 
                             zoom=3,
@@ -161,9 +156,6 @@ def create_time_series_plot(df):
 
     return fig
 
-
-
-
 app = dash.Dash(__name__)
 
 app.layout = html.Div([
@@ -191,7 +183,7 @@ app.layout = html.Div([
             id='time-interval',
             options=[{'label': 'Hourly', 'value': 'hour'},
                      {'label': 'Daily', 'value': 'day'},
-                     {'label': 'Weekly', 'value': 'week'}],
+                     {'label': 'Monthly', 'value': 'month'}],
             value='day',
         ),
         html.Div([
@@ -218,10 +210,11 @@ app.layout = html.Div([
      Input('lat_min', 'value'),
      Input('lat_max', 'value'),
      Input('lon_min', 'value'),
-     Input('lon_max', 'value')]
+     Input('lon_max', 'value'),
+     Input('time-interval', 'value')]  # Add the interval input
 )
-def update_heatmap(selected_value, lat_min, lat_max, lon_min, lon_max):
-    return create_heatmap(selected_value, lat_min, lat_max, lon_min, lon_max)
+def update_heatmap(selected_value, lat_min, lat_max, lon_min, lon_max, interval):
+    return create_heatmap(selected_value, lat_min, lat_max, lon_min, lon_max, interval)
 
 @app.callback(
     Output('time-series', 'figure'),
