@@ -13,10 +13,10 @@ def generate_and_insert_data():
     cursor = connection.cursor()
 
     # Iterate through 20 batches
-    for batch_number in range(1, 1001):
+    for batch_number in range(1, 2501):
         batch_id = f'B{batch_number}'
         num_catches = random.randint(20, 30)
-        base_time = datetime(2023, 1, random.randint(1, 27), random.randint(1, 23), 0)
+        base_time = datetime(2023, random.randint(1, 12), random.randint(1, 27), random.randint(1, 23), 0)
         base_latitude = random.uniform(-53, -25)
         base_longitude = random.uniform(160, 190)
         

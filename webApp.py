@@ -18,6 +18,9 @@ def get_heatmap_data(option, lat_min, lat_max, lon_min, lon_max, interval, start
     end_date_str = end_date.split("T")[0] # Extract only the date part
     end_date = datetime.strptime(end_date_str, "%Y-%m-%d") + timedelta(days=1)
 
+    start_date_str = start_date.split("T")[0] # Extract only the date part
+    start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+
         # Depending on the interval, adjust the SQL query to group by that interval
     if interval == 'hour':
         time_grouping = "strftime('%Y-%m-%d %H:00:00', time)"
@@ -61,9 +64,12 @@ def get_heatmap_data(option, lat_min, lat_max, lon_min, lon_max, interval, start
 
 def get_time_series_data(lat_min, lat_max, lon_min, lon_max, interval, start_date, end_date):
     connection = sqlite3.connect('crayfish_catch.db')
-    
+
     end_date_str = end_date.split("T")[0] # Extract only the date part
     end_date = datetime.strptime(end_date_str, "%Y-%m-%d") + timedelta(days=1)
+
+    start_date_str = start_date.split("T")[0] # Extract only the date part
+    start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
 
     # Depending on the interval, adjust the SQL query to group by that interval
     if interval == 'hour':
@@ -108,7 +114,7 @@ def create_heatmap(option, lat_min, lat_max, lon_min, lon_max, interval, start_d
                             lat='latitude', 
                             lon='longitude', 
                             z='value', 
-                            radius=10,
+                            radius=8,
                             center=dict(lat= -40, lon= 175), 
                             zoom=3,
                             mapbox_style="stamen-terrain", 
@@ -123,11 +129,13 @@ def create_heatmap(option, lat_min, lat_max, lon_min, lon_max, interval, start_d
 
         # Set the size of the figure to be square
     fig.update_layout(
+        
+        title_text=f"{option} by Location",
         mapbox_style="stamen-terrain",
-        width=800,  # Width of the figure in pixels
-        height=800,  # Height of the figure in pixels
+        width=600,  # Width of the figure in pixels
+        height=600,  # Height of the figure in pixels
         showlegend=False,
-        margin={"r": 0, "t": 0, "l": 0, "b": 0}
+        margin={"r": 0, "t": 40, "l": 0, "b": 0}
     )
 
         # Add latitude and longitude grid lines (you can modify the step)
@@ -171,69 +179,84 @@ def create_time_series_plot(df):
 app = dash.Dash(__name__)
 
 app.layout = html.Div([
-        html.Label('Select Time Interval:', style={'display': 'block'}),
-        dcc.Dropdown(
-            id='time-interval',
-            options=[{'label': 'Hourly', 'value': 'hour'},
-                     {'label': 'Daily', 'value': 'day'},
-                     {'label': 'Monthly', 'value': 'month'}],
-            value='day',
-        ),
-    
+    # Configuration
+    html.Div([
+        # Time Configuration
+        html.Label('Time Configuration:', style={'font-weight': 'bold'}),
         html.Div([
-        html.Label('Start Date:'),
-        dcc.DatePickerSingle(
-            id='start-date',
-            min_date_allowed=pd.Timestamp('2023-01-01'),  # Adjust as needed
-            max_date_allowed=pd.Timestamp('today'),
-            date=datetime(2023, 1, 1), # Default start date
-        ),
-        html.Label('End Date:'),
-        dcc.DatePickerSingle(
-            id='end-date',
-            min_date_allowed=pd.Timestamp('2023-01-01'),  # Adjust as needed
-            max_date_allowed=pd.Timestamp('today'),
-            date=datetime.today(), # Default end date
-
-        ),
-    ]),
-    html.Div([
-    dcc.RadioItems(
-        id='toggle-menu',
-        options=[{'label': 'Weight', 'value': 'Weight'},
-                 {'label': 'Number of Catches', 'value': 'Number of Catches'}],
-        value='Weight',
-        labelStyle={'display': 'inline-block'}
-    ),
-    html.Div([
-        html.Label('Latitude Range:'),
-        dcc.Input(id='lat_min', type='number', value=-53),
-        dcc.Input(id='lat_max', type='number', value=-15),
-    ]),
-    html.Div([
-        html.Label('Longitude Range:'),
-        dcc.Input(id='lon_min', type='number', value=150),
-        dcc.Input(id='lon_max', type='number', value=200),
-    ]),
-    dcc.Graph(id='heatmap'),
-
+            html.Label('Select Time Interval:'),
+            dcc.Dropdown(
+                id='time-interval',
+                options=[{'label': 'Hourly', 'value': 'hour'},
+                         {'label': 'Daily', 'value': 'day'},
+                         {'label': 'Monthly', 'value': 'month'}],
+                value='day',
+            ),
+        ], style={'margin-bottom': '10px'}),
+        html.Div([
+            html.Label('Start Date:'),
+            dcc.DatePickerSingle(
+                id='start-date',
+                min_date_allowed=pd.Timestamp('2023-01-01'),
+                max_date_allowed=pd.Timestamp('today'),
+                date=datetime(2023, 1, 1),
+            ),
+            html.Label('End Date:'),
+            dcc.DatePickerSingle(
+                id='end-date',
+                min_date_allowed=pd.Timestamp('2023-01-01'),
+                max_date_allowed=pd.Timestamp('today'),
+                date=datetime.today(),
+            ),
+        ], style={'margin-bottom': '10px'}),
+        # Data Options and Toggle Lines
         html.Div([
             html.Div([
-                dcc.Graph(id='time-series', style={'width': '95%'}), # Specify width here
-            ], style={'display': 'inline-block', 'width': '95%'}), # And here
+                html.Label('Data Options:', style={'font-weight': 'bold'}),
+                dcc.RadioItems(
+                    id='toggle-menu',
+                    options=[{'label': 'Weight', 'value': 'Weight'},
+                             {'label': 'Number of Catches', 'value': 'Number of Catches'}],
+                    value='Weight',
+                    labelStyle={'display': 'inline-block'},
+                ),
+            ], style={'display': 'inline-block', 'width': '50%'}),
             html.Div([
-                html.Label('Toggle lines:'),
+                html.Label('Toggle lines:', style={'font-weight': 'bold'}),
                 dcc.Checklist(
                     id='line-toggle',
                     options=[{'label': 'Total Weight', 'value': 'total_weight'},
                              {'label': 'Number of Catches', 'value': 'num_catches'},
                              {'label': 'Average Weight', 'value': 'avg_weight'}],
-                    value=['total_weight', 'num_catches', 'avg_weight'],  # all lines are displayed by default
+                    value=['total_weight', 'num_catches', 'avg_weight'],
                 ),
-            ], style={'display': 'inline-block', 'width': '15%', 'height': '50px', 'vertical-align': 'top', 'padding-left': '5px', 'padding-top': '5px'})
-        ], style={'display': 'flex', 'flex-direction': 'row'}),
-    ])
+            ], style={'display': 'inline-block', 'width': '50%'}),
+        ], style={'margin-bottom': '10px'}),
+        # Coordinate Ranges
+        html.Div([
+            html.Label('Coordinate Ranges:', style={'font-weight': 'bold'}),
+            html.Div([
+                html.Label('Latitude Range:'),
+                dcc.Input(id='lat_min', type='number', value=-53),
+                dcc.Input(id='lat_max', type='number', value=-15),
+            ], style={'margin-bottom': '10px'}),
+            html.Div([
+                html.Label('Longitude Range:'),
+                dcc.Input(id='lon_min', type='number', value=150),
+                dcc.Input(id='lon_max', type='number', value=200),
+            ]),
+        ], style={'margin-bottom': '20px'}),
+    ], style={'margin': '20px', 'padding': '10px', 'border': '1px solid #ccc'}),
 
+    # Heatmap and Time Series
+    html.Div([
+        html.Div([
+            dcc.Graph(id='heatmap'),
+        ], style={'display': 'inline-block', 'width': '50%'}),
+        html.Div([
+            dcc.Graph(id='time-series'),
+        ], style={'display': 'inline-block', 'width': '50%'}),
+    ], style={'margin': '10px'}),
 ])
 
 @app.callback(
