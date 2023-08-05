@@ -3,20 +3,57 @@ from crayfish_catch_management import Batch, Catch, create_database, insert_batc
 import plotly.express as px
 import sqlite3
 import pandas as pd
+import numpy as np
 
 import random
 from datetime import datetime, timedelta
 
+from math import sin, pi
+
+from math import sin, pi
+
+def seasonal_weight_variation(month, day):
+    # A sinusoidal function to model the seasonal variation
+    # Peaks during Spring and Summer, dips during Fall and Winter
+    total_days = 365.25  # Taking into account leap years
+    time_in_days = (month - 1) * 30 + day  # Approximating month lengths
+    return 1 + 0.05 * sin((2 * pi * time_in_days) / total_days)
+
+def seasonal_catch_variation(month, day):
+    # Another sinusoidal function to model the variation in the number of catches
+    total_days = 365.25  # Taking into account leap years
+    time_in_days = (month - 1) * 30 + day  # Approximating month lengths
+    return 1 + 0.4 * sin((2 * pi * time_in_days) / total_days)
+
+
+def add_noise(value, noise_percentage):
+    noise = value * (random.uniform(-1, 1) * noise_percentage / 100)
+    return value + noise
+
 def generate_and_insert_data():
     # Connect to the database
-    connection = sqlite3.connect('crayfish_catch.db')
+    connection = sqlite3.connect('DatabasePrograms/crayfish_catch.db')
+    probability_map = np.load('DatabasePrograms/probability_map.npy')
+
     cursor = connection.cursor()
 
-    # Iterate through 20 batches
-    for batch_number in range(1, 2501):
+    # Iterate through batches
+    for batch_number in range(1, 5001):
         batch_id = f'B{batch_number}'
-        num_catches = random.randint(20, 30)
-        base_time = datetime(2023, random.randint(1, 12), random.randint(1, 27), random.randint(1, 23), 0)
+        
+        start_date = datetime(2022, 1, 1)
+        end_date = datetime(2023, 12, 30)
+        delta_time = end_date - start_date
+
+        base_time = start_date + timedelta(days=random.randint(0, delta_time.days), hours=random.randint(5, 19))
+
+        base_month = base_time.month
+        
+        weight_season_factor = seasonal_weight_variation(base_month, base_time.day)
+        catch_season_factor = seasonal_catch_variation(base_month, base_time.day)
+        
+        num_catches = int(add_noise(20, 5) * catch_season_factor)
+        
         base_latitude = random.uniform(-53, -25)
         base_longitude = random.uniform(160, 190)
         
@@ -28,9 +65,25 @@ def generate_and_insert_data():
         for catch_number in range(1, num_catches + 1):
             time_variance = timedelta(minutes=random.randint(-30, 30))
             time = base_time + time_variance
-            latitude = round(base_latitude + random.uniform(-0.25, 0.25), 3)
-            longitude = round(base_longitude + random.uniform(-0.25, 0.25), 3)
-            weight = round(random.uniform(1, 5), 1)
+            
+            
+            lat_range = range(-53, -14)
+            lon_range = range(150, 201)
+
+            # Flatten the probability map and normalize it
+            probabilities = probability_map.flatten() / probability_map.sum()
+
+            # Create a grid of all possible coordinates
+            all_coordinates = [(lat, lon) for lat in lat_range for lon in lon_range]
+
+            # Randomly choose a coordinate based on the probability map
+            base_latitude, base_longitude = all_coordinates[np.random.choice(len(all_coordinates), p=probabilities)]
+
+            # Add random noise to the chosen coordinates
+            latitude = round(add_noise(base_latitude, 1) + random.uniform(-0.25, 0.25), 3)
+            longitude = round(add_noise(base_longitude, 1) + random.uniform(-0.25, 0.25), 3)
+            
+            weight = round(add_noise(1.5, 25) * weight_season_factor, 1)
 
             catch_id = f'{time}/B{batch_number}/C{catch_number}'
             catch = Catch(catchID=catch_id, time=time, coordinates=(latitude, longitude), weight=weight)
@@ -97,7 +150,7 @@ def main():
     generate_and_insert_data()
     # populate_large_database()
 
-    # retrieve_and_display_data('B1')
+    retrieve_and_display_data('B1')
     # retrieve_and_display_data('B156')
 
     # Scatter Plot

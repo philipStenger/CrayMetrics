@@ -66,6 +66,15 @@ def register_callbacks(app):
         )
 
         return fig
+    
+    @app.callback(
+        Output('end-date', 'min_date_allowed'),
+        [Input('start-date', 'date')]
+    )
+    def update_end_date_min(start_date):
+        return start_date
+
+
 
 def main():
     app = dash.Dash(__name__)

@@ -2,7 +2,7 @@ import sqlite3
 
 def create_database():
     # Connect to SQLite database (it will create the file if not exists)
-    connection = sqlite3.connect('crayfish_catch.db')
+    connection = sqlite3.connect('DatabasePrograms/crayfish_catch.db')
     cursor = connection.cursor()
 
     # Create tables for Batch and Catch
@@ -31,7 +31,7 @@ def create_database():
     connection.close()
 
 def insert_batch(batch):
-    connection = sqlite3.connect('crayfish_catch.db')
+    connection = sqlite3.connect('DatabasePrograms/crayfish_catch.db')
     cursor = connection.cursor()
 
     cursor.execute('INSERT INTO batches (batch_id, weight, number) VALUES (?, ?, ?)', 
@@ -50,7 +50,7 @@ def insert_catch(cursor, batch_id, catch):
 
 def remove_batch(batch_id):
     # Connect to the database
-    connection = sqlite3.connect('crayfish_catch.db')
+    connection = sqlite3.connect('DatabasePrograms/crayfish_catch.db')
     cursor = connection.cursor()
 
     # Delete the catches related to the batch
@@ -69,7 +69,7 @@ def remove_batch(batch_id):
 
 def clear_database():
     # Connect to the database
-    connection = sqlite3.connect('crayfish_catch.db')
+    connection = sqlite3.connect('DatabasePrograms/crayfish_catch.db')
     cursor = connection.cursor()
 
     # Delete all records from the catches table
@@ -88,7 +88,7 @@ def clear_database():
 
 def retrieve_and_display_data(batch_id):
     # Connect to the database
-    connection = sqlite3.connect('crayfish_catch.db')
+    connection = sqlite3.connect('DatabasePrograms/crayfish_catch.db')
     cursor = connection.cursor()
 
     # Retrieve batch information

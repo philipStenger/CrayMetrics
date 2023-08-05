@@ -1,0 +1,135 @@
+import sqlite3
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+import folium
+import geopandas as gpd
+from shapely.geometry import Point
+from geopandas import GeoDataFrame
+from folium.plugins import MarkerCluster
+
+
+def connect_to_db():
+    connection = sqlite3.connect('DatabasePrograms/crayfish_catch.db')
+    return connection
+
+
+def validate_gdf(gdf):
+    if not isinstance(gdf, GeoDataFrame):
+        print("Error: The object is not a GeoDataFrame.")
+        return False
+
+    # Check for a geometry column
+    if 'geometry' not in gdf.columns:
+        print("Error: The GeoDataFrame does not have a 'geometry' column.")
+        return False
+
+    # Check if geometries are valid
+    if not all(gdf['geometry'].is_valid):
+        print("Warning: Some geometries are invalid.")
+
+    # Check CRS
+    if gdf.crs is None:
+        print("Warning: Coordinate Reference System (CRS) is not set.")
+        
+    else:
+        print(f"Info: CRS is set to {gdf.crs}")
+
+    # Check for null values
+    if gdf.isnull().values.any():
+        print("Warning: There are null values in the GeoDataFrame.")
+
+    print("GeoDataFrame validation completed.")
+    return True
+
+
+def extract_location_data(connection):
+    query = '''
+    SELECT latitude, longitude, AVG(weight) as avg_weight
+    FROM catches
+    GROUP BY latitude, longitude
+    '''
+    # Create a DataFrame
+    df = pd.read_sql_query(query, connection)
+    # Convert DataFrame to GeoDataFrame
+    gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.longitude, df.latitude))
+    return gdf
+
+def visualize_clusters(gdf):
+    # Create a base map
+    map_clusters = folium.Map(location=[gdf['latitude'].mean(), gdf['longitude'].mean()], zoom_start=10)
+
+    # Create Marker Cluster
+    marker_cluster = MarkerCluster().add_to(map_clusters)
+
+    # Add the data points to the map
+    for index, row in gdf.iterrows():
+        location = [row['geometry'].y, row['geometry'].x]  # Extract latitude and longitude from geometry
+        folium.Marker(
+            location=location,
+            popup=f"Cluster: {row['cluster']}, Avg Weight: {row['avg_weight']}",
+            icon=folium.Icon(color='blue')
+        ).add_to(marker_cluster)
+
+    # Save or show the map
+    map_clusters.save('clusters_map.html')
+    return map_clusters
+
+def scale_features(gdf):
+    # Extract numerical features
+    features = gdf[['latitude', 'longitude', 'avg_weight']]
+    # Scale features using StandardScaler
+    scaler = StandardScaler()
+    scaled_features = scaler.fit_transform(features)
+    # Create a new GeoDataFrame with scaled features
+    scaled_gdf = gdf.copy()
+    scaled_gdf[['latitude', 'longitude', 'avg_weight']] = scaled_features
+    return scaled_gdf
+
+def find_optimal_clusters(gdf):
+    numerical_features = gdf[['latitude', 'longitude', 'avg_weight']]
+    wcss = []
+    for i in range(1, 11):
+        kmeans = KMeans(n_clusters=i, random_state=42, n_init=10)
+        kmeans.fit(numerical_features)
+        wcss.append(kmeans.inertia_)
+
+    differences = [wcss[i] - wcss[i + 1] for i in range(len(wcss) - 1)]
+    second_differences = [differences[i] - differences[i + 1] for i in range(len(differences) - 1)]
+    optimal_clusters = second_differences.index(max(second_differences)) + 2
+
+    return optimal_clusters
+
+def perform_clustering(gdf, n_clusters):
+    numerical_features = gdf[['latitude', 'longitude', 'avg_weight']]
+    kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
+    cluster_labels = kmeans.fit_predict(numerical_features)
+    
+    # Creating a GeoDataFrame with clustering results
+    gdf_clusters = gdf.copy()
+    gdf_clusters['cluster'] = cluster_labels
+    gdf_clusters['geometry'] = [Point(lon, lat) for lon, lat in zip(gdf_clusters['longitude'], gdf_clusters['latitude'])]
+    gdf_clusters = gpd.GeoDataFrame(gdf_clusters, geometry='geometry')
+    
+    return gdf_clusters
+
+def main():
+    # Extracting location data from the database
+    connection = connect_to_db()
+    locations_gdf = extract_location_data(connection)
+    connection.close()
+        
+    # Scaling the features
+    scaled_features = scale_features(locations_gdf)   
+
+    # Finding the optimal number of clusters
+    optimal_clusters = find_optimal_clusters(scaled_features)
+
+    # Performing clustering and updating locations_gdf with the clustering result
+    locations_gdf = perform_clustering(scaled_features, optimal_clusters)
+    
+    # Visualizing the clusters
+    visualize_clusters(locations_gdf)
+
+if __name__ == "__main__":
+    main()

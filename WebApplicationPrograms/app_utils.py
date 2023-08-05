@@ -26,18 +26,18 @@ def create_time_configuration():
                 html.Label('Start Date: '),
                 dcc.DatePickerSingle(
                     id='start-date',
-                    min_date_allowed=pd.Timestamp('2023-01-01'),
+                    min_date_allowed=pd.Timestamp('2022-01-01'),
                     max_date_allowed=pd.Timestamp('today'),
-                    date=datetime(2023, 1, 1),
+                    date=datetime(2022, 1, 1),
                 ),
             ], style={'width': '20%', 'display': 'inline-block'}),
             html.Div([
                 html.Label('End Date: '),
                 dcc.DatePickerSingle(
                     id='end-date',
-                    min_date_allowed=pd.Timestamp('2023-01-01'),
+                    min_date_allowed=pd.Timestamp('2022-01-01'),
                     max_date_allowed=pd.Timestamp('today'),
-                    date=datetime.today(),
+                    date=datetime(2023, 1, 1),
                 ),
             ], style={'width': '20%', 'display': 'inline-block'}),
         ], style={'margin-bottom': '20px'}),

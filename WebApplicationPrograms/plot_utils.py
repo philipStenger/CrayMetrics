@@ -8,7 +8,7 @@ def create_heatmap(option, lat_min, lat_max, lon_min, lon_max, interval, start_d
     df = get_heatmap_data(option, lat_min, lat_max, lon_min, lon_max, interval, start_date, end_date)
 
     if option == 'Weight':
-        max_catch_count = 80
+        max_catch_count = 25
     else:
         max_catch_count = 1
 
