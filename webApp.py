@@ -168,7 +168,7 @@ def create_time_series_plot(df):
     )
 
     fig.update_layout(
-        title='Crayfish Catch Metrics Over Time',
+        title='Crayfish Catch Metrics by Time Interval',
         yaxis=dict(title='Total Weight / Number of Catches'),
         yaxis2=dict(title='Average Weight'),
         xaxis=dict(title='Time Interval')
@@ -179,83 +179,99 @@ def create_time_series_plot(df):
 app = dash.Dash(__name__)
 
 app.layout = html.Div([
+    # Title
+    html.Div([
+        html.H2("CrayMetrics Data Analytics Platform", style={'textAlign': 'center'}),
+    ], style={'margin-bottom': '20px'}),
+    
     # Configuration
     html.Div([
         # Time Configuration
-        html.Label('Time Configuration:', style={'font-weight': 'bold'}),
         html.Div([
-            html.Label('Select Time Interval:'),
-            dcc.Dropdown(
-                id='time-interval',
-                options=[{'label': 'Hourly', 'value': 'hour'},
-                         {'label': 'Daily', 'value': 'day'},
-                         {'label': 'Monthly', 'value': 'month'}],
-                value='day',
-            ),
-        ], style={'margin-bottom': '10px'}),
-        html.Div([
-            html.Label('Start Date:'),
-            dcc.DatePickerSingle(
-                id='start-date',
-                min_date_allowed=pd.Timestamp('2023-01-01'),
-                max_date_allowed=pd.Timestamp('today'),
-                date=datetime(2023, 1, 1),
-            ),
-            html.Label('End Date:'),
-            dcc.DatePickerSingle(
-                id='end-date',
-                min_date_allowed=pd.Timestamp('2023-01-01'),
-                max_date_allowed=pd.Timestamp('today'),
-                date=datetime.today(),
-            ),
-        ], style={'margin-bottom': '10px'}),
+            html.Label('Time Configuration', style={'font-weight': 'bold', 'font-size': '18px'}),
+            html.Div([
+                html.Div([
+                    html.Label('Interval:'),
+                    dcc.Dropdown(
+                        id='time-interval',
+                        options=[{'label': 'Hourly', 'value': 'hour'},
+                                {'label': 'Daily', 'value': 'day'},
+                                {'label': 'Monthly', 'value': 'month'}],
+                        value='day',
+                    ),
+                ], style={'width': '30%', 'display': 'inline-block', 'padding-right': '20px'}),
+                html.Div([
+                    html.Label('Start Date: '),
+                    dcc.DatePickerSingle(
+                        id='start-date',
+                        min_date_allowed=pd.Timestamp('2023-01-01'),
+                        max_date_allowed=pd.Timestamp('today'),
+                        date=datetime(2023, 1, 1),
+                    ),
+                ], style={'width': '20%', 'display': 'inline-block'}),
+                html.Div([
+                    html.Label('End Date: '),
+                    dcc.DatePickerSingle(
+                        id='end-date',
+                        min_date_allowed=pd.Timestamp('2023-01-01'),
+                        max_date_allowed=pd.Timestamp('today'),
+                        date=datetime.today(),
+                    ),
+                ], style={'width': '20%', 'display': 'inline-block'}),
+            ], style={'margin-bottom': '20px'}),
+        ], style={'padding': '15px', 'border-bottom': '1px solid #ccc'}),
+        
         # Data Options and Toggle Lines
         html.Div([
+            html.Label('Data Options', style={'font-weight': 'bold', 'font-size': '18px'}),
             html.Div([
-                html.Label('Data Options:', style={'font-weight': 'bold'}),
-                dcc.RadioItems(
-                    id='toggle-menu',
-                    options=[{'label': 'Weight', 'value': 'Weight'},
-                             {'label': 'Number of Catches', 'value': 'Number of Catches'}],
-                    value='Weight',
-                    labelStyle={'display': 'inline-block'},
-                ),
-            ], style={'display': 'inline-block', 'width': '50%'}),
-            html.Div([
-                html.Label('Toggle lines:', style={'font-weight': 'bold'}),
-                dcc.Checklist(
-                    id='line-toggle',
-                    options=[{'label': 'Total Weight', 'value': 'total_weight'},
-                             {'label': 'Number of Catches', 'value': 'num_catches'},
-                             {'label': 'Average Weight', 'value': 'avg_weight'}],
-                    value=['total_weight', 'num_catches', 'avg_weight'],
-                ),
-            ], style={'display': 'inline-block', 'width': '50%'}),
-        ], style={'margin-bottom': '10px'}),
+                html.Div([
+                    dcc.RadioItems(
+                        id='toggle-menu',
+                        options=[{'label': 'Weight', 'value': 'Weight'},
+                                {'label': 'Number of Catches', 'value': 'Number of Catches'}],
+                        value='Weight',
+                    ),
+                ], style={'width': '50%', 'display': 'inline-block'}),
+                html.Div([
+                    html.Label('Toggle lines:'),
+                    dcc.Checklist(
+                        id='line-toggle',
+                        options=[{'label': 'Total Weight', 'value': 'total_weight'},
+                                {'label': 'Number of Catches', 'value': 'num_catches'},
+                                {'label': 'Average Weight', 'value': 'avg_weight'}],
+                        value=['total_weight', 'num_catches', 'avg_weight'],
+                    ),
+                ], style={'width': '50%', 'display': 'inline-block'}),
+            ], style={'margin-bottom': '20px'}),
+        ], style={'padding': '15px', 'border-bottom': '1px solid #ccc'}),
+        
         # Coordinate Ranges
         html.Div([
-            html.Label('Coordinate Ranges:', style={'font-weight': 'bold'}),
+            html.Label('Coordinate Ranges', style={'font-weight': 'bold', 'font-size': '18px'}),
             html.Div([
-                html.Label('Latitude Range:'),
-                dcc.Input(id='lat_min', type='number', value=-53),
-                dcc.Input(id='lat_max', type='number', value=-15),
-            ], style={'margin-bottom': '10px'}),
-            html.Div([
-                html.Label('Longitude Range:'),
-                dcc.Input(id='lon_min', type='number', value=150),
-                dcc.Input(id='lon_max', type='number', value=200),
-            ]),
-        ], style={'margin-bottom': '20px'}),
-    ], style={'margin': '20px', 'padding': '10px', 'border': '1px solid #ccc'}),
+                html.Div([
+                    html.Label('Latitude Range:'),
+                    dcc.Input(id='lat_min', type='number', value=-53),
+                    dcc.Input(id='lat_max', type='number', value=-15),
+                ], style={'margin-bottom': '10px'}),
+                html.Div([
+                    html.Label('Longitude Range:'),
+                    dcc.Input(id='lon_min', type='number', value=150),
+                    dcc.Input(id='lon_max', type='number', value=200),
+                ]),
+            ], style={'margin-bottom': '20px'}),
+        ], style={'padding': '15px'}),
+    ], style={'margin': '20px', 'padding': '20px', 'border': '1px solid #ccc', 'background-color': '#f9f9f9'}),
 
     # Heatmap and Time Series
     html.Div([
         html.Div([
             dcc.Graph(id='heatmap'),
-        ], style={'display': 'inline-block', 'width': '50%'}),
+        ], style={'display': 'inline-block', 'width': '49%', 'padding': '5px'}),
         html.Div([
             dcc.Graph(id='time-series'),
-        ], style={'display': 'inline-block', 'width': '50%'}),
+        ], style={'display': 'inline-block', 'width': '49%', 'padding': '5px'}),
     ], style={'margin': '10px'}),
 ])
 
@@ -305,7 +321,7 @@ def update_time_series(lat_min, lat_max, lon_min, lon_max, interval, line_toggle
         )
 
     fig.update_layout(
-        title='Crayfish Catch Metrics Over Time',
+        title=f'Crayfish Catch Metrics by {interval.capitalize()}',
         yaxis=dict(title='Total Weight / Number of Catches'),
         yaxis2=dict(title='Average Weight'),
         xaxis=dict(title='Time Interval')
