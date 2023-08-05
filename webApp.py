@@ -7,18 +7,18 @@ from dash import html
 from dash.dependencies import Input, Output
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
-
+from datetime import timedelta, datetime
 import pandas as pd
 import numpy as np
 
-def get_heatmap_data(option, lat_min, lat_max, lon_min, lon_max, interval='day'):
+def get_heatmap_data(option, lat_min, lat_max, lon_min, lon_max, interval, start_date, end_date):
     # Connect to the database
     connection = sqlite3.connect('crayfish_catch.db')
 
-    # Create a filter for latitude and longitude
-    lat_lon_filter = f'WHERE c.latitude BETWEEN {lat_min} AND {lat_max} AND c.longitude BETWEEN {lon_min} AND {lon_max}'
+    end_date_str = end_date.split("T")[0] # Extract only the date part
+    end_date = datetime.strptime(end_date_str, "%Y-%m-%d") + timedelta(days=1)
 
-    # Add code to set time_grouping based on interval, like in get_time_series_data
+        # Depending on the interval, adjust the SQL query to group by that interval
     if interval == 'hour':
         time_grouping = "strftime('%Y-%m-%d %H:00:00', time)"
     elif interval == 'month':
@@ -26,33 +26,44 @@ def get_heatmap_data(option, lat_min, lat_max, lon_min, lon_max, interval='day')
     else: # default to day
         time_grouping = "strftime('%Y-%m-%d', time)"
 
+    # Create a filter for latitude and longitude
+    lat_lon_filter = f'WHERE c.latitude BETWEEN {lat_min} AND {lat_max} AND c.longitude BETWEEN {lon_min} AND {lon_max}'
+    date_filter = f"AND time >= '{start_date}' AND time <= '{end_date}'"
+    print("option: ", option)
+
     if option == 'Weight':
         query = f'''
             SELECT {time_grouping} as time_interval, c.latitude, c.longitude, SUM(c.weight) as value
             FROM catches AS c
             JOIN batches AS b ON c.batch_id = b.batch_id
-            {lat_lon_filter}
+            {lat_lon_filter} {date_filter}
             GROUP BY time_interval, c.latitude, c.longitude
         '''
     else:  # Number of Catches
         query = f'''
             SELECT {time_grouping} as time_interval, c.latitude, c.longitude, COUNT(c.catch_id) as value
             FROM catches AS c
-            {lat_lon_filter}
+            {lat_lon_filter} {date_filter}
             GROUP BY time_interval, c.latitude, c.longitude
         '''
 
+    print("query: ", query)
 
     # Execute query and read the result into a DataFrame
     df = pd.read_sql_query(query, connection)
+
+    print(df.head())
 
     # Close the connection
     connection.close()
 
     return df
 
-def get_time_series_data(lat_min, lat_max, lon_min, lon_max, interval='day'):
+def get_time_series_data(lat_min, lat_max, lon_min, lon_max, interval, start_date, end_date):
     connection = sqlite3.connect('crayfish_catch.db')
+    
+    end_date_str = end_date.split("T")[0] # Extract only the date part
+    end_date = datetime.strptime(end_date_str, "%Y-%m-%d") + timedelta(days=1)
 
     # Depending on the interval, adjust the SQL query to group by that interval
     if interval == 'hour':
@@ -61,6 +72,8 @@ def get_time_series_data(lat_min, lat_max, lon_min, lon_max, interval='day'):
         time_grouping = "strftime('%Y-%m', time)"
     else: # default to day
         time_grouping = "strftime('%Y-%m-%d', time)"
+
+    date_filter = f"AND time >= '{start_date}' AND time <= '{end_date}'"
 
     query = f'''
         SELECT {time_grouping} as time_interval,
@@ -73,24 +86,23 @@ def get_time_series_data(lat_min, lat_max, lon_min, lon_max, interval='day'):
         FROM catches AS c
         WHERE c.latitude BETWEEN {lat_min} AND {lat_max}
           AND c.longitude BETWEEN {lon_min} AND {lon_max}
+          {date_filter}
         GROUP BY {time_grouping}
         ORDER BY {time_grouping}
     '''
 
     df = pd.read_sql_query(query, connection)
-    print(df)
     connection.close()
 
     return df
 
-
-def create_heatmap(option, lat_min, lat_max, lon_min, lon_max, interval='day'):
-    df = get_heatmap_data(option, lat_min, lat_max, lon_min, lon_max, interval)
+def create_heatmap(option, lat_min, lat_max, lon_min, lon_max, interval, start_date, end_date):
+    df = get_heatmap_data(option, lat_min, lat_max, lon_min, lon_max, interval, start_date, end_date)
 
     if option == 'Weight':
-        max_catch_count = 100
+        max_catch_count = 80
     else:
-        max_catch_count = 50
+        max_catch_count = 1
 
     fig = px.density_mapbox(df, 
                             lat='latitude', 
@@ -159,6 +171,33 @@ def create_time_series_plot(df):
 app = dash.Dash(__name__)
 
 app.layout = html.Div([
+        html.Label('Select Time Interval:', style={'display': 'block'}),
+        dcc.Dropdown(
+            id='time-interval',
+            options=[{'label': 'Hourly', 'value': 'hour'},
+                     {'label': 'Daily', 'value': 'day'},
+                     {'label': 'Monthly', 'value': 'month'}],
+            value='day',
+        ),
+    
+        html.Div([
+        html.Label('Start Date:'),
+        dcc.DatePickerSingle(
+            id='start-date',
+            min_date_allowed=pd.Timestamp('2023-01-01'),  # Adjust as needed
+            max_date_allowed=pd.Timestamp('today'),
+            date=datetime(2023, 1, 1), # Default start date
+        ),
+        html.Label('End Date:'),
+        dcc.DatePickerSingle(
+            id='end-date',
+            min_date_allowed=pd.Timestamp('2023-01-01'),  # Adjust as needed
+            max_date_allowed=pd.Timestamp('today'),
+            date=datetime.today(), # Default end date
+
+        ),
+    ]),
+    html.Div([
     dcc.RadioItems(
         id='toggle-menu',
         options=[{'label': 'Weight', 'value': 'Weight'},
@@ -177,15 +216,7 @@ app.layout = html.Div([
         dcc.Input(id='lon_max', type='number', value=200),
     ]),
     dcc.Graph(id='heatmap'),
-    html.Div([
-        html.Label('Select Time Interval:', style={'display': 'block'}),
-        dcc.Dropdown(
-            id='time-interval',
-            options=[{'label': 'Hourly', 'value': 'hour'},
-                     {'label': 'Daily', 'value': 'day'},
-                     {'label': 'Monthly', 'value': 'month'}],
-            value='day',
-        ),
+
         html.Div([
             html.Div([
                 dcc.Graph(id='time-series', style={'width': '95%'}), # Specify width here
@@ -202,6 +233,7 @@ app.layout = html.Div([
             ], style={'display': 'inline-block', 'width': '15%', 'height': '50px', 'vertical-align': 'top', 'padding-left': '5px', 'padding-top': '5px'})
         ], style={'display': 'flex', 'flex-direction': 'row'}),
     ])
+
 ])
 
 @app.callback(
@@ -211,10 +243,12 @@ app.layout = html.Div([
      Input('lat_max', 'value'),
      Input('lon_min', 'value'),
      Input('lon_max', 'value'),
-     Input('time-interval', 'value')]  # Add the interval input
+     Input('time-interval', 'value'),
+     Input('start-date', 'date'),  # Add this line
+     Input('end-date', 'date')]  # Add this line
 )
-def update_heatmap(selected_value, lat_min, lat_max, lon_min, lon_max, interval):
-    return create_heatmap(selected_value, lat_min, lat_max, lon_min, lon_max, interval)
+def update_heatmap(selected_value, lat_min, lat_max, lon_min, lon_max, interval, start_date, end_date):
+    return create_heatmap(selected_value, lat_min, lat_max, lon_min, lon_max, interval, start_date, end_date)
 
 @app.callback(
     Output('time-series', 'figure'),
@@ -223,10 +257,12 @@ def update_heatmap(selected_value, lat_min, lat_max, lon_min, lon_max, interval)
      Input('lon_min', 'value'),
      Input('lon_max', 'value'),
      Input('time-interval', 'value'),
-     Input('line-toggle', 'value')]  # Add this line to get the checkbox values
+     Input('line-toggle', 'value'),
+     Input('start-date', 'date'),  # Add this line
+     Input('end-date', 'date')]  # Add this line
 )
-def update_time_series(lat_min, lat_max, lon_min, lon_max, interval, line_toggle):
-    df = get_time_series_data(lat_min, lat_max, lon_min, lon_max, interval)
+def update_time_series(lat_min, lat_max, lon_min, lon_max, interval, line_toggle, start_date, end_date):
+    df = get_time_series_data(lat_min, lat_max, lon_min, lon_max, interval, start_date, end_date)
     fig = make_subplots(specs=[[{"secondary_y": True}]])
 
     if 'total_weight' in line_toggle:
@@ -253,7 +289,6 @@ def update_time_series(lat_min, lat_max, lon_min, lon_max, interval, line_toggle
     )
 
     return fig
-
 
 if __name__ == '__main__':
 

@@ -15,7 +15,7 @@ def generate_and_insert_data():
     # Iterate through 20 batches
     for batch_number in range(1, 1001):
         batch_id = f'B{batch_number}'
-        num_catches = random.randint(20, 80)
+        num_catches = random.randint(20, 30)
         base_time = datetime(2023, 1, random.randint(1, 27), random.randint(1, 23), 0)
         base_latitude = random.uniform(-53, -25)
         base_longitude = random.uniform(160, 190)
@@ -30,7 +30,7 @@ def generate_and_insert_data():
             time = base_time + time_variance
             latitude = round(base_latitude + random.uniform(-0.25, 0.25), 3)
             longitude = round(base_longitude + random.uniform(-0.25, 0.25), 3)
-            weight = round(random.uniform(2, 5), 1)
+            weight = round(random.uniform(1, 5), 1)
 
             catch_id = f'{time}/B{batch_number}/C{catch_number}'
             catch = Catch(catchID=catch_id, time=time, coordinates=(latitude, longitude), weight=weight)
