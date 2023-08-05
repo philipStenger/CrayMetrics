@@ -283,8 +283,8 @@ app.layout = html.Div([
      Input('lon_min', 'value'),
      Input('lon_max', 'value'),
      Input('time-interval', 'value'),
-     Input('start-date', 'date'),  # Add this line
-     Input('end-date', 'date')]  # Add this line
+     Input('start-date', 'date'),  
+     Input('end-date', 'date')]  
 )
 def update_heatmap(selected_value, lat_min, lat_max, lon_min, lon_max, interval, start_date, end_date):
     return create_heatmap(selected_value, lat_min, lat_max, lon_min, lon_max, interval, start_date, end_date)
@@ -297,8 +297,8 @@ def update_heatmap(selected_value, lat_min, lat_max, lon_min, lon_max, interval,
      Input('lon_max', 'value'),
      Input('time-interval', 'value'),
      Input('line-toggle', 'value'),
-     Input('start-date', 'date'),  # Add this line
-     Input('end-date', 'date')]  # Add this line
+     Input('start-date', 'date'),  
+     Input('end-date', 'date')]  
 )
 def update_time_series(lat_min, lat_max, lon_min, lon_max, interval, line_toggle, start_date, end_date):
     df = get_time_series_data(lat_min, lat_max, lon_min, lon_max, interval, start_date, end_date)
