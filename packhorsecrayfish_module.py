@@ -36,7 +36,6 @@ class PackhorseCray(object):
         .id
         .catch_id
         .sex
-        .species
         .is_legal
         .has_eggs
         .is_soft
